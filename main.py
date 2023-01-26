@@ -1,12 +1,16 @@
 import streamlit as st
+import os
 from chatgpt import Conversation
+from dotenv import load_dotenv
 
+load_dotenv()
 col1, col2 = st.columns([0.4, 2])
+key = os.environ.get('OPENAI_API_KEY')
 
 with col1:
 
     # Add a logo to the sidebar
-    st.image("logo.png", width=150)
+    st.image("wolf.svg", width=150)
 
 with col2:
 
