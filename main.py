@@ -1,43 +1,63 @@
 import streamlit as st
-import os
-from chatgpt import Conversation
-from dotenv import load_dotenv
-
-load_dotenv()
-col1, col2 = st.columns([0.4, 2])
-key = os.environ.get('OPENAI_API_KEY')
-
-with col1:
-
-    # Add a logo to the sidebar
-    st.image("wolf.svg", width=150)
-
-with col2:
-
-    # Set the title
-    st.title("ChatGPT Magic using Streamlit")
+import openai
+from streamlit_chat import message
 
 
-with st.form("gpt_form"):
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-    # Create a text input for the first field
-    input1 = st.text_input("Enter whatever you like:")
 
-    # Create a text input for the second field
-    input2 = st.text_input("What else do you want?, still thinking?")
-
-    # submitting the form here.
-    submitted = st.form_submit_button("Submit 🤖")
-
-if submitted:
-    # st.write("slider", slider_val, "checkbox", checkbox_val)
-
-    conversation = Conversation()
-    st.write(
-        conversation.chat(input1)
+def generate_response(prompt):
+    completions = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.5,
     )
-    st.write(conversation.chat(input2))
+    new_message = completions.choices[0].text
+    return new_message
 
-    # The AI will forget it was speaking Portuguese
-    conversation.reset()
-    st.stop()
+
+def gen_image(image_prompt):
+    image_response = openai.Image.create(
+        prompt=image_prompt,
+        n=1,
+        size="1024x1024"
+    )
+    image_url = image_response['data'][0]['url']
+    rendered = st.image(image_url, caption='Here is your Image')
+    return rendered
+
+
+st.title("chatBot : I'm a RazzBot using Streamlit and openAI")
+
+# Storing the chat
+if 'generated' not in st.session_state:
+    st.session_state['generated'] = []
+
+if 'past' not in st.session_state:
+    st.session_state['past'] = []
+
+
+def get_text():
+    input_text = st.text_input("You: ", "Hello, how are you?", key="input")
+    return input_text
+
+
+user_input = get_text()
+
+if 'draw' in user_input.split() or 'picture' in user_input.split() or 'graph' in user_input.split():
+    output = gen_image(user_input)
+else:
+    output = generate_response(user_input)
+    # store the output
+    st.session_state.past.append(user_input)
+    st.session_state.generated.append(output)
+
+if st.session_state['generated']:
+    for i in range(len(st.session_state['generated']) - 1, -1, -1):
+        message(st.session_state["generated"][i], key=str(i))
+        message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
+
+
